@@ -14,19 +14,13 @@ namespace Bloc_de_Notas___Interfaces
     public partial class Form1 : Form
     {
 
-           private string ruta=string.Empty;
            private bool cambios=false;
 
         public Form1()
         {
             InitializeComponent();
+            nuevaPestaña();
         }
-
-        private void textBox1_TextChanged(object sender, EventArgs e)
-        {
-         
-        }
-
         private void guardarComoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (tabControl1.SelectedTab == null) return;
@@ -185,11 +179,6 @@ namespace Bloc_de_Notas___Interfaces
 
             return tabControl1.SelectedTab.Controls.OfType<RichTextBox>().FirstOrDefault();
         }
-
-        public void richTextBox1_TextChanged(object sender, EventArgs e)
-        {
-            MostrarEstado("Se realizaron cambios.");
-        }
         private void CerrarPestanaActual()
         {
             if (tabControl1.SelectedTab == null) return;
@@ -217,6 +206,29 @@ namespace Bloc_de_Notas___Interfaces
         private void cerrarPestañaToolStripMenuItem_Click(object sender, EventArgs e)
         {
             CerrarPestanaActual();
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (!cambios) return;
+
+            DialogResult res = MessageBox.Show(
+                "Hay cambios sin guardar. ¿Desea guardar antes de salir?",
+                "Salir",
+                MessageBoxButtons.YesNoCancel,
+                MessageBoxIcon.Warning);
+
+            if (res == DialogResult.Cancel)
+            {
+                e.Cancel = true;
+            }
+            else if (res == DialogResult.Yes)
+            {
+                guardarToolStripMenuItem_Click(null, null);
+
+                if (cambios)
+                    e.Cancel = true;
+            }
         }
     }
 }
