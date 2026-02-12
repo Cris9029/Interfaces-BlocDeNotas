@@ -24,63 +24,86 @@ namespace Bloc_de_Notas___Interfaces
 
         private void textBox1_TextChanged(object sender, EventArgs e)
         {
-            cambios=true;
-            MostrarEstado("Se realizaron cambios.");
+         
         }
 
         private void guardarComoToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (tabControl1.SelectedTab == null) return;
+
+            RichTextBox actual = pestañaActual();
+            if (actual == null) return;
+
             SaveFileDialog sfd = new SaveFileDialog();
             sfd.Filter = "Documentos de texto|*.txt";
-            sfd.AddExtension = true;
-            DialogResult res = sfd.ShowDialog();
 
-            if (res == DialogResult.OK)
+            if (sfd.ShowDialog() == DialogResult.OK)
             {
-                File.WriteAllText(sfd.FileName, textBox1.Text);
-                ruta = sfd.FileName;
+                File.WriteAllText(sfd.FileName, actual.Text);
+
+                // Guardar la ruta en la pestaña
+                tabControl1.SelectedTab.Tag = sfd.FileName;
+
+                // Cambiar nombre de la pestaña
+                tabControl1.SelectedTab.Text = Path.GetFileName(sfd.FileName);
+
                 cambios = false;
-                MostrarEstado("Archivo guardado correctamente.");
+                MostrarEstado("Archivo guardado.");
             }
         }
 
         private void guardarToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (!string.IsNullOrEmpty(ruta) && File.Exists(ruta)) // Guardar
-            {
-                File.WriteAllText(ruta, textBox1.Text);
-            }
-            else // Guardar Como
-            {
-                SaveFileDialog sfd = new SaveFileDialog();
-                sfd.Filter = "Documentos de texto|*.txt";
+            if (tabControl1.SelectedTab == null) return;
 
-                if (sfd.ShowDialog() == DialogResult.OK)
-                {
-                    ruta = sfd.FileName;
-                    File.WriteAllText(ruta, textBox1.Text);
+            RichTextBox actual = pestañaActual();
+            if (actual == null) return;
 
-                }
+            string ruta = tabControl1.SelectedTab.Tag as string;
+
+            //Guardar
+            if (!string.IsNullOrEmpty(ruta) && File.Exists(ruta))
+            {
+                File.WriteAllText(ruta, actual.Text);
+                cambios = false;
+                MostrarEstado("Archivo guardado.");
             }
-            cambios = false;
-            MostrarEstado("Archivo guardado correctamente.");
+            else //Guardar Como
+            {
+                guardarComoToolStripMenuItem_Click(sender, e);
+            }
         }
 
         private void abrirToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            OpenFileDialog sfd = new OpenFileDialog();
-            sfd.Filter = "Documentos de texto|*.txt";
-            sfd.AddExtension = true;
-            DialogResult res = sfd.ShowDialog();
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Filter = "Documentos de texto|*.txt";
 
-            if (res == DialogResult.OK)
+            if (ofd.ShowDialog() == DialogResult.OK)
             {
-                textBox1.Text = File.ReadAllText(sfd.FileName);
-                ruta = sfd.FileName;
+                TabPage pagina = new TabPage(Path.GetFileName(ofd.FileName));
+                pagina.Tag = ofd.FileName;
+
+                RichTextBox nuevo = new RichTextBox();
+                nuevo.Dock = DockStyle.Fill;
+                nuevo.Multiline = true;
+                nuevo.AcceptsTab = true;
+                nuevo.Text = File.ReadAllText(ofd.FileName);
+
+                nuevo.TextChanged += (s, f) =>
+                {
+                    cambios = true;
+                    MostrarEstado("Se realizaron cambios.");
+                };
+
+                pagina.Controls.Add(nuevo);
+                tabControl1.TabPages.Add(pagina);
+                tabControl1.SelectedTab = pagina;
+
                 cambios = false;
                 MostrarEstado("Archivo abierto correctamente.");
             }
-                
+
         }
 
         private void salirToolStripMenuItem_Click(object sender, EventArgs e)
@@ -124,15 +147,76 @@ namespace Bloc_de_Notas___Interfaces
             Form2 f = new Form2(this);
             f.Show();
         }
-        public TextBox getTextBox()
-        {
-            return textBox1;
-        }
-
+       
         private void nuevoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Form1 f = new Form1();
             f.Show();
+        }
+
+        private void nuevaPestañaToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            nuevaPestaña();
+            MostrarEstado("Pestaña creada correctamente.");
+        }
+        private void nuevaPestaña()
+        {
+            TabPage nuevaPagina = new TabPage("Nuevo documento");
+            nuevaPagina.Tag = null;
+
+            RichTextBox nuevo = new RichTextBox();
+            nuevo.Multiline = true;
+            nuevo.Dock = DockStyle.Fill;
+            nuevo.AcceptsTab = true;
+
+            nuevo.TextChanged += (s, e) =>
+            {
+                cambios = true;
+                MostrarEstado("Se realizaron cambios.");
+            };
+
+            nuevaPagina.Controls.Add(nuevo);
+            tabControl1.TabPages.Add(nuevaPagina);
+            tabControl1.SelectedTab = nuevaPagina;
+        }
+        public RichTextBox pestañaActual()
+        {
+            if (tabControl1.SelectedTab == null) return null;
+
+            return tabControl1.SelectedTab.Controls.OfType<RichTextBox>().FirstOrDefault();
+        }
+
+        public void richTextBox1_TextChanged(object sender, EventArgs e)
+        {
+            MostrarEstado("Se realizaron cambios.");
+        }
+        private void CerrarPestanaActual()
+        {
+            if (tabControl1.SelectedTab == null) return;
+
+            RichTextBox actual = pestañaActual();
+            if (actual == null) return;
+
+            if (cambios)
+            {
+                DialogResult res = MessageBox.Show(
+                    "Hay cambios sin guardar. ¿Quiere guardar?","Cerrar pestaña", MessageBoxButtons.YesNoCancel,MessageBoxIcon.Warning);
+
+                if (res == DialogResult.Cancel) return;
+
+                if (res == DialogResult.Yes)
+                {
+                    guardarToolStripMenuItem_Click(null, null);
+                }
+            }
+
+            tabControl1.TabPages.Remove(tabControl1.SelectedTab);
+            MostrarEstado("Pestaña cerrada.");
+        }
+
+        private void cerrarPestañaToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            CerrarPestanaActual();
         }
     }
 }

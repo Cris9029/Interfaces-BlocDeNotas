@@ -29,7 +29,8 @@ namespace Bloc_de_Notas___Interfaces
 
         private void button1_Click(object sender, EventArgs e)
         {
-            TextBox tb1 = f.getTextBox();
+            RichTextBox tb1 = f.pestañaActual();
+            if (tb1 == null) return;
             textBox1.Text = "";
             tb1.SelectionLength = 0;
             tb1.SelectionStart = 0;
@@ -64,7 +65,8 @@ namespace Bloc_de_Notas___Interfaces
         }
         private void Buscar(bool direccion)
         {
-            TextBox tb1 = f.getTextBox();
+            RichTextBox tb1 = f.pestañaActual();
+            if (tb1 == null) return;
             string buscar = textBox1.Text;
             if (string.IsNullOrEmpty(buscar))
                 return;
