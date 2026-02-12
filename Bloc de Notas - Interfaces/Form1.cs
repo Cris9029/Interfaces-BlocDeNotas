@@ -15,6 +15,12 @@ namespace Bloc_de_Notas___Interfaces
     {
 
            private bool cambios=false;
+           Dictionary<string, string> emoticonos = new Dictionary<string, string>() {
+               { ":)", "🙂" },
+               { ":(", "🙁" },
+               { ";)", "😉" },
+               { ":D", "😃" }
+           };
 
         public Form1()
         {
@@ -33,7 +39,7 @@ namespace Bloc_de_Notas___Interfaces
 
             if (sfd.ShowDialog() == DialogResult.OK)
             {
-                File.WriteAllText(sfd.FileName, actual.Text);
+                File.WriteAllText(sfd.FileName, TextoPlano(actual.Text));
 
                 // Guardar la ruta en la pestaña
                 tabControl1.SelectedTab.Tag = sfd.FileName;
@@ -58,7 +64,7 @@ namespace Bloc_de_Notas___Interfaces
             //Guardar
             if (!string.IsNullOrEmpty(ruta) && File.Exists(ruta))
             {
-                File.WriteAllText(ruta, actual.Text);
+                File.WriteAllText(ruta, TextoPlano(actual.Text));
                 cambios = false;
                 MostrarEstado("Archivo guardado.");
             }
@@ -83,6 +89,7 @@ namespace Bloc_de_Notas___Interfaces
                 nuevo.Multiline = true;
                 nuevo.AcceptsTab = true;
                 nuevo.Text = File.ReadAllText(ofd.FileName);
+                Convertir(nuevo);
 
                 nuevo.TextChanged += (s, f) =>
                 {
@@ -165,6 +172,7 @@ namespace Bloc_de_Notas___Interfaces
 
             nuevo.TextChanged += (s, e) =>
             {
+                Convertir(nuevo);
                 cambios = true;
                 MostrarEstado("Se realizaron cambios.");
             };
@@ -229,6 +237,37 @@ namespace Bloc_de_Notas___Interfaces
                 if (cambios)
                     e.Cancel = true;
             }
+        }
+        private void Convertir(RichTextBox rtb)
+        {
+            int cursor = rtb.SelectionStart;
+
+            foreach (var emo in emoticonos)
+            {
+                int index;
+                while ((index = rtb.Text.IndexOf(emo.Key)) != -1)
+                {
+                    rtb.Select(index, emo.Key.Length);
+                    rtb.SelectedText = emo.Value;
+
+                    // Colorear emoji
+                    rtb.Select(index, emo.Value.Length);
+                    rtb.SelectionColor = Color.OrangeRed;
+                }
+            }
+
+            rtb.SelectionStart = cursor;
+            rtb.SelectionLength = 0;
+            rtb.SelectionColor = Color.Black;
+            rtb.Font = new Font("Segoe UI", 10);
+        }
+        private string TextoPlano(string texto)
+        {
+            foreach (var emo in emoticonos)
+            {
+                texto = texto.Replace(emo.Value, emo.Key);
+            }
+            return texto;
         }
     }
 }
