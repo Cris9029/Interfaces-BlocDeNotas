@@ -113,7 +113,7 @@
             this.checkBox1.Location = new System.Drawing.Point(364, 58);
             this.checkBox1.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
             this.checkBox1.Name = "checkBox1";
-            this.checkBox1.Size = new System.Drawing.Size(191, 27);
+            this.checkBox1.Size = new System.Drawing.Size(155, 23);
             this.checkBox1.TabIndex = 4;
             this.checkBox1.Text = "Coincidir mayúsculas";
             this.checkBox1.UseVisualStyleBackColor = true;
@@ -121,7 +121,7 @@
             // 
             // Form2
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 23F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(651, 142);
             this.Controls.Add(this.flowLayoutPanel1);
@@ -129,7 +129,7 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
             this.Name = "Form2";
-            this.Text = "Form2";
+            this.Text = "Buscar";
             this.Load += new System.EventHandler(this.Form2_Load);
             this.flowLayoutPanel1.ResumeLayout(false);
             this.flowLayoutPanel1.PerformLayout();
