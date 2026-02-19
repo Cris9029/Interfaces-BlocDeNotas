@@ -14,7 +14,7 @@ namespace Bloc_de_Notas___Interfaces
     {
         private Form1 f;
         private int pos = -1;
-        private bool ultDir = true;
+        private bool direccion = true;
 
         public Form2(Form1 f)
         {
@@ -44,26 +44,24 @@ namespace Bloc_de_Notas___Interfaces
 
         private void button4_Click(object sender, EventArgs e)
         {
-            Buscar(ultDir);
+            Buscar();
         }
 
         private void button3_Click(object sender, EventArgs e)
         {
-            ultDir = true;
-            Buscar(true);
+            direccion = true;
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
-            ultDir = false;
-            Buscar(false);
+            direccion = false;
         }
 
         private void textBox1_TextChanged(object sender, EventArgs e)
         {
             pos = -1;
         }
-        private void Buscar(bool direccion)
+        private void Buscar()
         {
             RichTextBox tb1 = f.pestañaActual();
             if (tb1 == null) return;
@@ -73,11 +71,11 @@ namespace Bloc_de_Notas___Interfaces
             StringComparison comp;
             if (checkBox1.Checked)
             {
-                comp = StringComparison.OrdinalIgnoreCase;
+                comp = StringComparison.Ordinal;
             }
             else
             {
-                comp = StringComparison.Ordinal;
+                comp = StringComparison.OrdinalIgnoreCase;
             }
             int inicio;
             if (direccion)
@@ -120,6 +118,16 @@ namespace Bloc_de_Notas___Interfaces
             {
                 MessageBox.Show("Texto no encontrado", "Buscar", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
+        }
+
+        private void radioButton1_CheckedChanged(object sender, EventArgs e)
+        {
+            direccion = false;
+        }
+
+        private void radioButton2_CheckedChanged(object sender, EventArgs e)
+        {
+            direccion = true;
         }
     }
 }
