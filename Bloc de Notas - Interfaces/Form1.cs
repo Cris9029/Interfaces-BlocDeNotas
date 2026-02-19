@@ -1,36 +1,58 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 using System.IO;
+using System.Linq;
+using System.Windows.Forms;
 
 namespace Bloc_de_Notas___Interfaces
 {
     public partial class Form1 : Form
     {
+        private HashSet<TabPage> pestañasConCambios = new HashSet<TabPage>();
+        private bool converting = false;
 
-           private bool cambios=false;
-           Dictionary<string, string> emoticonos = new Dictionary<string, string>() {
-               { ":)", "🙂" },
-               { ":(", "🙁" },
-               { ";)", "😉" },
-               { ":D", "😃" }
-           };
+        Dictionary<string, Image> emojiImgs = new Dictionary<string, Image>()
+        {
+            { ":)", Properties.Resources.feliz },
+            { ":(", Properties.Resources.triste },
+            { ";)", Properties.Resources.guino },
+            { ":D", Properties.Resources.contento }
+        };
 
         public Form1()
         {
             InitializeComponent();
             nuevaPestaña();
         }
+
+        private bool PestañaTieneCambios(TabPage page = null)
+        {
+            return pestañasConCambios.Contains(page ?? tabControl1.SelectedTab);
+        }
+
+        private void MarcarCambios(TabPage page, bool tieneCambios)
+        {
+            if (tieneCambios)
+                pestañasConCambios.Add(page);
+            else
+                pestañasConCambios.Remove(page);
+        }
+
+        public RichTextBox pestañaActual()
+        {
+            if (tabControl1.SelectedTab == null) return null;
+            return tabControl1.SelectedTab.Controls.OfType<RichTextBox>().FirstOrDefault();
+        }
+
+        private void MostrarEstado(string mensaje)
+        {
+            toolStripStatusLabel1.Text = mensaje;
+        }
+
         private void guardarComoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (tabControl1.SelectedTab == null) return;
-
             RichTextBox actual = pestañaActual();
             if (actual == null) return;
 
@@ -39,15 +61,12 @@ namespace Bloc_de_Notas___Interfaces
 
             if (sfd.ShowDialog() == DialogResult.OK)
             {
-                File.WriteAllText(sfd.FileName, TextoPlano(actual.Text));
+                File.WriteAllText(sfd.FileName, TextoPlano(actual));
 
-                // Guardar la ruta en la pestaña
                 tabControl1.SelectedTab.Tag = sfd.FileName;
-
-                // Cambiar nombre de la pestaña
                 tabControl1.SelectedTab.Text = Path.GetFileName(sfd.FileName);
 
-                cambios = false;
+                MarcarCambios(tabControl1.SelectedTab, false);
                 MostrarEstado("Archivo guardado.");
             }
         }
@@ -55,20 +74,18 @@ namespace Bloc_de_Notas___Interfaces
         private void guardarToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (tabControl1.SelectedTab == null) return;
-
             RichTextBox actual = pestañaActual();
             if (actual == null) return;
 
             string ruta = tabControl1.SelectedTab.Tag as string;
 
-            //Guardar
             if (!string.IsNullOrEmpty(ruta) && File.Exists(ruta))
             {
-                File.WriteAllText(ruta, TextoPlano(actual.Text));
-                cambios = false;
+                File.WriteAllText(ruta, TextoPlano(actual));
+                MarcarCambios(tabControl1.SelectedTab, false);
                 MostrarEstado("Archivo guardado.");
             }
-            else //Guardar Como
+            else
             {
                 guardarComoToolStripMenuItem_Click(sender, e);
             }
@@ -84,34 +101,26 @@ namespace Bloc_de_Notas___Interfaces
                 TabPage pagina = new TabPage(Path.GetFileName(ofd.FileName));
                 pagina.Tag = ofd.FileName;
 
-                RichTextBox nuevo = new RichTextBox();
-                nuevo.Dock = DockStyle.Fill;
-                nuevo.Multiline = true;
-                nuevo.AcceptsTab = true;
+                RichTextBox nuevo = CrearRichTextBox(pagina);
                 nuevo.Text = File.ReadAllText(ofd.FileName);
                 Convertir(nuevo);
-
-                nuevo.TextChanged += (s, f) =>
-                {
-                    cambios = true;
-                    MostrarEstado("Se realizaron cambios.");
-                };
 
                 pagina.Controls.Add(nuevo);
                 tabControl1.TabPages.Add(pagina);
                 tabControl1.SelectedTab = pagina;
 
-                cambios = false;
+                MarcarCambios(pagina, false);
                 MostrarEstado("Archivo abierto correctamente.");
             }
-
         }
 
         private void salirToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (cambios == true)
+            if (pestañasConCambios.Count > 0)
             {
-                DialogResult res = MessageBox.Show("Hay cambios sin guardar. ¿Desea guardar antes de salir?","Salir",MessageBoxButtons.YesNoCancel,MessageBoxIcon.Warning);
+                DialogResult res = MessageBox.Show(
+                    "Hay cambios sin guardar. ¿Desea guardar antes de salir?",
+                    "Salir", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
 
                 if (res == DialogResult.Yes)
                 {
@@ -129,85 +138,61 @@ namespace Bloc_de_Notas___Interfaces
             }
         }
 
-        private void buscarToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            
-        }
-        private void MostrarEstado(string mensaje)
-        {
-            toolStripStatusLabel1.Text = mensaje;
-        }
-
-        private void toolStripStatusLabel1_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void buscarToolStripMenuItem1_Click(object sender, EventArgs e)
-        {
-            Form2 f = new Form2(this);
-            f.Show();
-        }
-       
-        private void nuevoToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            Form1 f = new Form1();
-            f.Show();
-        }
-
         private void nuevaPestañaToolStripMenuItem_Click(object sender, EventArgs e)
         {
             nuevaPestaña();
             MostrarEstado("Pestaña creada correctamente.");
         }
+
         private void nuevaPestaña()
         {
             TabPage nuevaPagina = new TabPage("Nuevo documento");
             nuevaPagina.Tag = null;
 
-            RichTextBox nuevo = new RichTextBox();
-            nuevo.Multiline = true;
-            nuevo.Dock = DockStyle.Fill;
-            nuevo.AcceptsTab = true;
-
-            nuevo.TextChanged += (s, e) =>
-            {
-                Convertir(nuevo);
-                cambios = true;
-                MostrarEstado("Se realizaron cambios.");
-            };
-
+            RichTextBox nuevo = CrearRichTextBox(nuevaPagina);
             nuevaPagina.Controls.Add(nuevo);
             tabControl1.TabPages.Add(nuevaPagina);
             tabControl1.SelectedTab = nuevaPagina;
         }
-        public RichTextBox pestañaActual()
-        {
-            if (tabControl1.SelectedTab == null) return null;
 
-            return tabControl1.SelectedTab.Controls.OfType<RichTextBox>().FirstOrDefault();
+        private RichTextBox CrearRichTextBox(TabPage pagina)
+        {
+            RichTextBox rtb = new RichTextBox();
+            rtb.Dock = DockStyle.Fill;
+            rtb.Multiline = true;
+            rtb.AcceptsTab = true;
+
+            rtb.TextChanged += (s, e) =>
+            {
+                if (converting) return;
+
+                Convertir(rtb);
+
+                MarcarCambios(pagina, true);
+                MostrarEstado("Se realizaron cambios.");
+            };
+
+            return rtb;
         }
+
         private void CerrarPestanaActual()
         {
             if (tabControl1.SelectedTab == null) return;
 
-            RichTextBox actual = pestañaActual();
-            if (actual == null) return;
+            TabPage actual = tabControl1.SelectedTab;
 
-            if (cambios)
+            if (PestañaTieneCambios(actual))
             {
                 DialogResult res = MessageBox.Show(
-                    "Hay cambios sin guardar. ¿Quiere guardar?","Cerrar pestaña", MessageBoxButtons.YesNoCancel,MessageBoxIcon.Warning);
+                    "Hay cambios sin guardar. ¿Quiere guardar?",
+                    "Cerrar pestaña", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
 
                 if (res == DialogResult.Cancel) return;
-
-                if (res == DialogResult.Yes)
-                {
-                    guardarToolStripMenuItem_Click(null, null);
-                }
+                if (res == DialogResult.Yes) guardarToolStripMenuItem_Click(null, null);
             }
 
-            tabControl1.TabPages.Remove(tabControl1.SelectedTab);
+            pestañasConCambios.Remove(actual);
+            tabControl1.TabPages.Remove(actual);
             MostrarEstado("Pestaña cerrada.");
         }
 
@@ -216,15 +201,20 @@ namespace Bloc_de_Notas___Interfaces
             CerrarPestanaActual();
         }
 
+
+        private void nuevoToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Form1 f = new Form1();
+            f.Show();
+        }
+
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (!cambios) return;
+            if (pestañasConCambios.Count == 0) return;
 
             DialogResult res = MessageBox.Show(
                 "Hay cambios sin guardar. ¿Desea guardar antes de salir?",
-                "Salir",
-                MessageBoxButtons.YesNoCancel,
-                MessageBoxIcon.Warning);
+                "Salir", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
 
             if (res == DialogResult.Cancel)
             {
@@ -233,41 +223,125 @@ namespace Bloc_de_Notas___Interfaces
             else if (res == DialogResult.Yes)
             {
                 guardarToolStripMenuItem_Click(null, null);
-
-                if (cambios)
+                if (pestañasConCambios.Count > 0)
                     e.Cancel = true;
             }
         }
+
+        private void buscarToolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            Form2 f = new Form2(this);
+            f.Show();
+        }
+
+        private void toolStripStatusLabel1_Click(object sender, EventArgs e) { }
+        private void buscarToolStripMenuItem_Click(object sender, EventArgs e) { }
+
+
         private void Convertir(RichTextBox rtb)
         {
-            int cursor = rtb.SelectionStart;
-
-            foreach (var emo in emoticonos)
+            converting = true;
+            try
             {
-                int index;
-                while ((index = rtb.Text.IndexOf(emo.Key)) != -1)
-                {
-                    rtb.Select(index, emo.Key.Length);
-                    rtb.SelectedText = emo.Value;
+                int cursor = rtb.SelectionStart;
 
-                    // Colorear emoji
-                    rtb.Select(index, emo.Value.Length);
-                    rtb.SelectionColor = Color.OrangeRed;
+                foreach (var emo in emojiImgs)
+                {
+                    int index;
+                    while ((index = rtb.Text.IndexOf(emo.Key)) != -1)
+                    {
+                        rtb.Select(index, emo.Key.Length);
+                        rtb.SelectedText = "";
+                        InsertarImagen(rtb, emo.Value, index);
+                    }
+                }
+
+                rtb.SelectionStart = Math.Min(cursor, rtb.TextLength);
+                rtb.SelectionLength = 0;
+            }
+            finally
+            {
+                converting = false;
+            }
+        }
+
+        private string TextoPlano(RichTextBox rtb)
+        {
+            string rtf = rtb.Rtf;
+
+            foreach (var emo in emojiImgs)
+            {
+                string pictBlock = GetRtfPictBlock(emo.Value);
+                if (pictBlock != null)
+                    rtf = rtf.Replace(pictBlock, emo.Key);
+            }
+
+            using (RichTextBox temp = new RichTextBox())
+            {
+                try
+                {
+                    temp.Rtf = rtf;
+                    return temp.Text;
+                }
+                catch
+                {
+                    return rtb.Text;
                 }
             }
-
-            rtb.SelectionStart = cursor;
-            rtb.SelectionLength = 0;
-            rtb.SelectionColor = Color.Black;
-            rtb.Font = new Font("Segoe UI", 10);
         }
-        private string TextoPlano(string texto)
+
+        private Dictionary<Image, string> _pictBlockCache = new Dictionary<Image, string>();
+
+        private string GetRtfPictBlock(Image img)
         {
-            foreach (var emo in emoticonos)
+            if (_pictBlockCache.TryGetValue(img, out string cached))
+                return cached;
+
+            using (RichTextBox temp = new RichTextBox())
             {
-                texto = texto.Replace(emo.Value, emo.Key);
+                Clipboard.SetImage(img);
+                temp.Paste();
+                Clipboard.Clear();
+
+                string rtf = temp.Rtf ?? "";
+
+                int start = rtf.IndexOf("{\\pict");
+                if (start == -1)
+                {
+                    _pictBlockCache[img] = null;
+                    return null;
+                }
+
+                int depth = 0, end = -1;
+                for (int i = start; i < rtf.Length; i++)
+                {
+                    if (rtf[i] == '{') depth++;
+                    else if (rtf[i] == '}')
+                    {
+                        depth--;
+                        if (depth == 0) { end = i; break; }
+                    }
+                }
+
+                if (end == -1)
+                {
+                    _pictBlockCache[img] = null;
+                    return null;
+                }
+
+                string block = rtf.Substring(start, end - start + 1);
+                _pictBlockCache[img] = block;
+                return block;
             }
-            return texto;
+        }
+
+        private void InsertarImagen(RichTextBox rtb, Image img, int index)
+        {
+            rtb.Select(index, 0);
+
+            Clipboard.SetImage(img);
+            rtb.Paste();
+            Clipboard.Clear();
         }
     }
 }
