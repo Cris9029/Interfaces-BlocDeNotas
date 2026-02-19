@@ -15,11 +15,8 @@ namespace Bloc_de_Notas___Interfaces
     {
 
            private bool cambios=false;
-           Dictionary<string, string> emoticonos = new Dictionary<string, string>() {
-               { ":)", "🙂" },
-               { ":(", "🙁" },
-               { ";)", "😉" },
-               { ":D", "😃" }
+           Dictionary<string, Image> emojis = new Dictionary<string, Image>() {
+               { ":)", Properties.Resources.happy }
            };
 
         public Form1()
@@ -242,17 +239,12 @@ namespace Bloc_de_Notas___Interfaces
         {
             int cursor = rtb.SelectionStart;
 
-            foreach (var emo in emoticonos)
+            foreach (var emoji in emojis)
             {
-                int index;
-                while ((index = rtb.Text.IndexOf(emo.Key)) != -1)
+                if (emojis.ContainsKey(":)"))
                 {
-                    rtb.Select(index, emo.Key.Length);
-                    rtb.SelectedText = emo.Value;
-
-                    // Colorear emoji
-                    rtb.Select(index, emo.Value.Length);
-                    rtb.SelectionColor = Color.OrangeRed;
+                    Clipboard.SetImage(emojis[":)"]);
+                    rtb.Paste();
                 }
             }
 
@@ -263,9 +255,9 @@ namespace Bloc_de_Notas___Interfaces
         }
         private string TextoPlano(string texto)
         {
-            foreach (var emo in emoticonos)
+            foreach (var emoji in emojis)
             {
-                texto = texto.Replace(emo.Value, emo.Key);
+                texto = texto.Replace(emoji.Value, emoji.Key);
             }
             return texto;
         }
